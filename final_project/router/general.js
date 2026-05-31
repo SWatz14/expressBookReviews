@@ -3,6 +3,7 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require('axios');
 
 const doesExist = (username) => {
     return users.filter(user => user.username === username).length > 0;
@@ -25,35 +26,44 @@ public_users.post("/register", (req, res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  res.send(JSON.stringify(books, null, 4))
+public_users.get('/',async function (req, res) {
+  try {
+    const response = await axios.get ('http://localhost:5000/');
+    res.send(JSON.stringify(response.data, null, 4));
+  }catch(error){
+    res.status(500).json({message:error.message});
+  }
   
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  const isbn =req.params.isbn;
-  res.send(JSON.stringify(books[isbn],null, 4));
+public_users.get('/isbn/:isbn',async function (req, res) {
+  try{
+    const response = await axios.get(`http://localhost:5000/isbn/${req.params.isbn}`);
+  }catch (error) {
+    res.status(500).json({message:error.message});
+  }
   
  });
   
 // Get book details based on author
 public_users.get('/author/:author',function (req, res) {
-  const author = req.params.author;
-  const keys = Object.keys(books);
-  const booksByAuthor = keys.filter(key=> books[key].author === author).map(key=>books[key]);
-
-  res.send(JSON.stringify(booksByAuthor,null,4));
-  
+  try {
+        const response = await axios.get(`http://localhost:5000/author/${req.params.author}`);
+        res.send(JSON.stringify(response.data, null, 4));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 });
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
-  const title = req.params.title;
-  const keys = Object.keys(books);
-  const booksByTitle = keys.filter(key => books[key].title === title).map(key=>books[key]);
-
-  res.send(JSON.stringify(booksByTitle,null,4));
+  try {
+        const response = await axios.get(`http://localhost:5000/title/${req.params.title}`);
+        res.send(JSON.stringify(response.data, null, 4));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
  
 });
 
