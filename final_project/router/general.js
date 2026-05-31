@@ -7,9 +7,25 @@ const axios = require('axios');
 
 const doesExist = (username) => {
     return users.filter(user => user.username === username).length > 0;
-  }
+}
 
+// Helper functions
+const getAllBooks = () => new Promise((resolve) => resolve(books));
 
+const getBookByISBN = (isbn) => new Promise((resolve, reject) => {
+    const result = books[isbn];
+    result ? resolve(result) : reject("Book not found");
+});
+
+const getBooksByAuthor = (author) => new Promise((resolve) => {
+    resolve(Object.keys(books).filter(key => books[key].author === author).map(key => books[key]));
+});
+
+const getBooksByTitle = (title) => new Promise((resolve) => {
+    resolve(Object.keys(books).filter(key => books[key].title === title).map(key => books[key]));
+});
+
+// Register a new user
 public_users.post("/register", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -28,9 +44,7 @@ public_users.post("/register", (req, res) => {
 // Get the book list available in the shop
 public_users.get('/', async function (req, res) {
     try {
-        const allBooks = await new Promise((resolve) => {
-            resolve(books);
-        });
+        const allBooks = await getAllBooks();
         res.send(JSON.stringify(allBooks, null, 4));
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -40,23 +54,17 @@ public_users.get('/', async function (req, res) {
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn', async function (req, res) {
     try {
-        const book = await new Promise((resolve, reject) => {
-            const result = books[req.params.isbn];
-            result ? resolve(result) : reject("Book not found");
-        });
+        const book = await getBookByISBN(req.params.isbn);
         res.send(JSON.stringify(book, null, 4));
     } catch (error) {
-        res.status(404).json({ message: error });
+        res.status(404).json({ message: "Book not found" });
     }
 });
-  
+
 // Get book details based on author
 public_users.get('/author/:author', async function (req, res) {
     try {
-        const booksByAuthor = await new Promise((resolve) => {
-            const result = Object.keys(books).filter(key => books[key].author === req.params.author).map(key => books[key]);
-            resolve(result);
-        });
+        const booksByAuthor = await getBooksByAuthor(req.params.author);
         res.send(JSON.stringify(booksByAuthor, null, 4));
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -66,21 +74,21 @@ public_users.get('/author/:author', async function (req, res) {
 // Get all books based on title
 public_users.get('/title/:title', async function (req, res) {
     try {
-        const booksByTitle = await new Promise((resolve) => {
-            const result = Object.keys(books).filter(key => books[key].title === req.params.title).map(key => books[key]);
-            resolve(result);
-        });
+        const booksByTitle = await getBooksByTitle(req.params.title);
         res.send(JSON.stringify(booksByTitle, null, 4));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-//  Get book review
-public_users.get('/review/:isbn',function (req, res) {
-  const isbn= req.params.isbn;
-  res.send(JSON.stringify(books[isbn].reviews, null, 4));
-  
+// Get book review
+public_users.get('/review/:isbn', function (req, res) {
+    const isbn = req.params.isbn;
+    if (books[isbn]) {
+        res.send(JSON.stringify(books[isbn].reviews, null, 4));
+    } else {
+        res.status(404).json({ message: "Book not found" });
+    }
 });
 
 module.exports.general = public_users;
